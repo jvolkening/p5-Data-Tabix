@@ -1,0 +1,104 @@
+=head1 NAME
+
+Data::Tabix - Pure Perl interface to Tabix-indexed flatfiles
+
+=head1 SYNOPSIS
+
+    use Data::Tabix;
+
+    my $reader = Data::Tabix->new( 'some_file.tsv.gz' );
+    my $results = $reader->query( $name, $start, $end );
+    for my $row (@$results) {
+        
+        # $row is an arrayref containing the fields of the record
+        # (format-dependent)
+
+    }
+
+=head1 DESCRIPTION
+
+C<Data::Tabix> enables querying of Tabix-indexed tab-delimited tables for
+region overlap, most commonly used in genomics. Input files must be block gzip
+compressed (e.g. using bgzip) and indexed using tabix. Queries specify a
+reference name (typically a sequence ID) and optionally 1-based start and end
+coordinates. The returned array reference contains a two-dimensional array of
+records which overlapped the requested region. For details of Tabix indexing
+and retrieval, see the original publication at
+L<http://dx.doi.org/10.1093/bioinformatics/btq671>.
+
+This module is written in pure Perl as an alternative to XS-based modules (see below).
+
+=head1 METHODS
+
+=over 4
+
+=item B<new>
+
+    my $reader = Data::Tabix->new( $input_fn );
+
+Creates and returns a new C<Data::Tabix> engine. Takes a file path as the
+single required input parameter. The file must be BGZF compressed (e.g. using
+bgzip) and indexed using tabix. The index file must be present as
+"$input_fn.tbi". During construction the entire index is parsed, which is
+moderately slower than the C-based alternatives but is only done once.
+Subsequent queries are rapid, such that for a reasonably large number of
+queries the different in performance becomes negligible.
+
+=item B<query>
+
+    # returns all records overlapping the region between 1000-2000 bp on chr1
+    my $results = $reader->query("chr1", 1000, 2000);
+    for (@$results) {
+        my $strand = $_->[STRAND_COL];
+    }
+
+Search the indexed file and return all records whose extent (based on one or
+two coordinate fields) overlaps that requested. Takes a minimum of one
+argument (the reference name, typically a sequence ID) and two optional
+arguments (starting and ending coordinates of the target region).
+
+Returns a reference to an array with one record per line. Individual records
+are also array references containing the fields of the record
+(format-specific).
+
+=item B<names>
+
+    my @names = $reader->names;
+
+Returns an array of reference names present in the file. Typically this will
+be a list of sequence IDs.
+
+=back
+
+=head1 CAVEATS AND BUGS
+
+This is code is in alpha testing stage and the API is not guaranteed to be
+stable.
+
+Please reports bugs to the author.
+
+=head1 SEE ALSO
+
+L<Bio::HTS::Tabix> - XS bindings to the htslib tabix API
+
+=head1 AUTHOR
+
+Jeremy Volkening <jdv@base2bio.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2015-2016 Jeremy Volkening
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
+
